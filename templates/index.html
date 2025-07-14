@@ -1,0 +1,1265 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Prediksi Saham Indonesia</title>
+    <!-- Tailwind CSS dari CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            transition: all 0.3s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .stock-card {
+            transition: all 0.3s ease;
+        }
+
+        .stock-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+        }
+
+        .apexcharts-tooltip {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.375rem;
+            border: none;
+        }
+
+        .apexcharts-tooltip-title {
+            font-weight: 600;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* Memperbaiki tinggi chart container */
+        .chart-container {
+            height: 400px;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease;
+            border-radius: 0.375rem;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .nav-link.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #4f46e5;
+            font-weight: 500;
+        }
+
+        .sidebar-toggle {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 100;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Sidebar Toggle for Mobile -->
+    <button id="sidebar-toggle" class="sidebar-toggle bg-indigo-600 text-white p-3 rounded-full shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar bg-white w-64 shadow-md fixed h-full overflow-y-auto z-10">
+            <div class="p-4 border-b">
+                <div class="flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2 text-indigo-600" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path
+                            d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                    </svg>
+                    <h1 class="text-xl font-bold text-gray-800">Predictionary</h1>
+                </div>
+            </div>
+
+            <nav class="p-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Menu Utama</p>
+                <a href="#overview" class="nav-link active flex items-center px-4 py-2 text-gray-700 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path
+                            d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    Overview
+                </a>
+                <a href="#comparison" class="nav-link flex items-center px-4 py-2 text-gray-700 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                        <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                    </svg>
+                    Perbandingan
+                </a>
+                <a href="#analysis" class="nav-link flex items-center px-4 py-2 text-gray-700 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Analisis Prediksi
+                </a>
+
+                <div class="mt-6 mb-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pilih Saham</p>
+                    <div class="px-3">
+                        <form id="prediction-form" class="space-y-3">
+                            <div>
+                                <select id="ticker" name="ticker"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                                    <option value="">-- Pilih Saham --</option>
+                                    {% for code, name in stocks.items() %}
+                                    <option value="{{ code }}">{{ code }} - {{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <select id="days" name="days"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                                    <option value="7">7 Hari</option>
+                                    <option value="14">14 Hari</option>
+                                    <option value="30" selected>30 Hari</option>
+                                    <option value="60">60 Hari</option>
+                                    <option value="90">90 Hari</option>
+                                </select>
+                            </div>
+
+                            <button type="button" id="analyze-btn"
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm">
+                                Analisis & Prediksi
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Saham Teratas</p>
+                    <div id="top-stocks" class="space-y-2 px-3">
+                        <!-- Top stocks will be added here -->
+                        <div class="flex justify-center">
+                            <div
+                                class="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 ml-64 md:ml-64 md:px-8 px-4 py-6 md:py-8 flex flex-col">
+            <!-- Content sections -->
+
+            <!-- Overview Section -->
+            <section id="overview-section" class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Overview</h2>
+                    <div class="text-sm text-gray-500">
+                        <span id="current-date"></span>
+                    </div>
+                </div>
+
+                <!-- Market Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="card bg-white rounded-lg shadow-sm p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">IHSG</p>
+                                <h3 id="ihsg-value" class="text-xl font-bold text-gray-800">Loading...</h3>
+                            </div>
+                            <div id="ihsg-change" class="px-2 py-1 rounded text-sm font-medium">
+                                <div class="w-16 h-5 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white rounded-lg shadow-sm p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Top Gainer</p>
+                                <h3 id="top-gainer" class="text-xl font-bold text-gray-800">Loading...</h3>
+                            </div>
+                            <div id="top-gainer-change" class="px-2 py-1 rounded text-sm font-medium text-green-600">
+                                <div class="w-16 h-5 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white rounded-lg shadow-sm p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Top Loser</p>
+                                <h3 id="top-loser" class="text-xl font-bold text-gray-800">Loading...</h3>
+                            </div>
+                            <div id="top-loser-change" class="px-2 py-1 rounded text-sm font-medium text-red-600">
+                                <div class="w-16 h-5 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-white rounded-lg shadow-sm p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Most Active</p>
+                                <h3 id="most-active" class="text-xl font-bold text-gray-800">Loading...</h3>
+                            </div>
+                            <div id="most-active-volume" class="text-sm text-gray-500">
+                                <div class="w-16 h-5 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Analysis -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Analisis Terakhir</h3>
+                    <div id="recent-analysis-chart" class="chart-container"></div>
+                </div>
+            </section>
+
+            <!-- Comparison Section -->
+            <section id="comparison-section" class="mb-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Perbandingan Saham</h2>
+                    <div>
+                        <select id="comparison-period"
+                            class="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <option value="1mo">1 Bulan</option>
+                            <option value="3mo" selected>3 Bulan</option>
+                            <option value="6mo">6 Bulan</option>
+                            <option value="1y">1 Tahun</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="combined-chart-container" class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div id="combined-chart-loading" class="flex justify-center items-center p-12">
+                        <div
+                            class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin">
+                        </div>
+                        <span class="ml-3 text-indigo-600">Memuat data perbandingan saham...</span>
+                    </div>
+                    <div id="combined-chart-error"
+                        class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+                        <p>Terjadi kesalahan saat memuat data perbandingan saham.</p>
+                    </div>
+                    <div id="combined-chart-content" class="hidden">
+                        <div id="comparison-chart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Performa Saham</h3>
+                    <div id="stocks-performance"
+                        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <!-- Stock cards will be added here dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analysis Section -->
+            <section id="analysis-section" class="mb-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Analisis & Prediksi</h2>
+                </div>
+
+                <div id="loading-indicator" class="hidden bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div class="flex flex-col items-center justify-center p-8">
+                        <div
+                            class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4">
+                        </div>
+                        <p class="text-gray-600">Memproses data dan membuat prediksi...</p>
+                    </div>
+                </div>
+
+                <div id="error-message"
+                    class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+                    <p id="error-text"></p>
+                </div>
+
+                <div id="results-container" class="hidden space-y-6">
+                    <!-- Informasi Saham -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                            <div>
+                                <h2 id="stock-name" class="text-2xl font-bold text-gray-800"></h2>
+                                <p id="stock-code" class="text-gray-500"></p>
+                            </div>
+                            <div class="mt-4 md:mt-0">
+                                <span id="stock-price" class="text-3xl font-bold"></span>
+                                <span id="stock-change" class="ml-2 px-2 py-1 rounded text-sm font-semibold"></span>
+                            </div>
+                        </div>
+
+                        <!-- Grafik -->
+                        <div id="prediction-chart" class="chart-container mt-6"></div>
+                    </div>
+
+                    <!-- Kartu Ringkasan -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-green-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Prediksi Tertinggi</h3>
+                            <div id="highest-prediction" class="mt-4">
+                                <p class="text-2xl font-bold text-green-600">-</p>
+                                <p class="text-sm text-gray-500">-</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-red-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Prediksi Terendah</h3>
+                            <div id="lowest-prediction" class="mt-4">
+                                <p class="text-2xl font-bold text-red-600">-</p>
+                                <p class="text-sm text-gray-500">-</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-blue-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Potensi Return</h3>
+                            <div id="potential-return" class="mt-4">
+                                <p class="text-2xl font-bold text-blue-600">-</p>
+                                <p class="text-sm text-gray-500">Berdasarkan prediksi akhir periode</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-blue-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Persentase Error</h3>
+                            <div id="RMSE" class="mt-4">
+                                <p class="text-2xl font-bold text-blue-600">-</p>
+                                <p class="text-sm text-gray-500">Tingkat error (RMSE)</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-red-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Persentase Error</h3>
+                            <div id="MAE" class="mt-4">
+                                <p class="text-2xl font-bold text-red-600">-</p>
+                                <p class="text-sm text-gray-500">Tingkat error (MAE)</p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-white rounded-lg shadow-sm p-6 border-t-4 border-green-500">
+                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Persentase Error</h3>
+                            <div id="R-squared" class="mt-4">
+                                <p class="text-2xl font-bold text-red-600">-</p>
+                                <p class="text-sm text-gray-500">R-squared</p>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Tabel Prediksi -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Detail Prediksi</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Tanggal</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Harga Pembukaan</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Harga Tertinggi</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Harga Terendah</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Harga Penutupan</th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Perubahan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prediction-table" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data prediksi akan ditampilkan di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4 text-sm text-gray-500">
+                        <p>Disclaimer: Prediksi ini hanya untuk tujuan informasi dan pendidikan. Bukan merupakan
+                            rekomendasi
+                            investasi.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Setup date
+            const now = new Date();
+            document.getElementById('current-date').textContent = new Intl.DateTimeFormat('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            }).format(now);
+
+            // Mobile sidebar toggle
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+
+            sidebarToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('open');
+            });
+
+            // Navigation
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = {
+                'overview': document.getElementById('overview-section'),
+                'comparison': document.getElementById('comparison-section'),
+                'analysis': document.getElementById('analysis-section')
+            };
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // Remove active class from all links
+                    navLinks.forEach(l => l.classList.remove('active'));
+
+                    // Add active class to clicked link
+                    this.classList.add('active');
+
+                    // Hide all sections
+                    Object.values(sections).forEach(section => {
+                        section.classList.add('hidden');
+                    });
+
+                    // Show selected section
+                    const sectionId = this.getAttribute('href').substring(1);
+                    sections[sectionId].classList.remove('hidden');
+
+                    // On mobile, close sidebar after selection
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.remove('open');
+                    }
+
+                    // If comparison section is selected, load the comparison chart
+                    if (sectionId === 'comparison') {
+                        loadCombinedChart();
+                    }
+                });
+            });
+
+            // Form elements
+            const form = document.getElementById('prediction-form');
+            const tickerSelect = document.getElementById('ticker');
+            const daysSelect = document.getElementById('days');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const resultsContainer = document.getElementById('results-container');
+            const errorMessage = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+
+            // Charts variables
+            let comparisonChart = null;
+            let predictionChart = null;
+            let recentAnalysisChart = null;
+
+            // Data storage
+            let allStocksData = {};
+            let lastAnalyzedStock = null;
+
+            // Initialize Recent Analysis chart with placeholder data
+            function initRecentAnalysisChart() {
+                const options = {
+                    series: [{
+                        name: 'Placeholder',
+                        data: [
+                            { x: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], y: 100 },
+                            { x: now.toISOString().split('T')[0], y: 100 },
+                        ]
+                    }],
+                    chart: {
+                        type: 'line',
+                        height: 350,
+                        toolbar: {
+                            show: false
+                        },
+                        animations: {
+                            enabled: false
+                        }
+                    },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 2,
+                        dashArray: [0, 5]
+                    },
+                    colors: ['#e5e7eb'],
+                    xaxis: {
+                        type: 'datetime',
+                        labels: {
+                            datetimeUTC: false,
+                            style: {
+                                colors: '#9ca3af',
+                            }
+                        },
+                        axisBorder: {
+                            show: false
+                        },
+                        axisTicks: {
+                            show: false
+                        }
+                    },
+                    yaxis: {
+                        labels: {
+                            style: {
+                                colors: '#9ca3af',
+                            }
+                        }
+                    },
+                    grid: {
+                        borderColor: '#f3f4f6',
+                        strokeDashArray: 4,
+                        xaxis: {
+                            lines: {
+                                show: true
+                            }
+                        },
+                        yaxis: {
+                            lines: {
+                                show: true
+                            }
+                        }
+                    },
+                    tooltip: {
+                        enabled: false
+                    },
+                    legend: {
+                        show: false
+                    },
+                    annotations: {
+                        yaxis: [{
+                            y: 0,
+                            strokeDashArray: 0,
+                            borderColor: '#f3f4f6',
+                            fillColor: '#f3f4f6',
+                            opacity: 0.3,
+                            offsetX: 0,
+                            offsetY: 0
+                        }]
+                    },
+                    noData: {
+                        text: 'Belum ada analisis terbaru',
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        offsetX: 0,
+                        offsetY: 0,
+                        style: {
+                            color: '#9ca3af',
+                            fontSize: '16px',
+                            fontFamily: 'Inter, sans-serif'
+                        }
+                    }
+                };
+
+                recentAnalysisChart = new ApexCharts(document.getElementById('recent-analysis-chart'), options);
+                recentAnalysisChart.render();
+            }
+
+            // Initialize mock market data
+            function initMarketData() {
+                // IHSG
+                document.getElementById('ihsg-value').textContent = '7,425.31';
+                const ihsgChange = document.getElementById('ihsg-change');
+                ihsgChange.textContent = '+0.57%';
+                ihsgChange.classList.add('bg-green-100', 'text-green-800');
+
+                // Top Gainer
+                document.getElementById('top-gainer').textContent = 'BREN';
+                document.getElementById('top-gainer-change').textContent = '+4.32%';
+
+                // Top Loser
+                document.getElementById('top-loser').textContent = 'GOTO';
+                document.getElementById('top-loser-change').textContent = '-3.12%';
+
+                // Most Active
+                document.getElementById('most-active').textContent = 'BBRI';
+                document.getElementById('most-active-volume').textContent = '276.5M';
+            }
+
+            // Fungsi untuk membuat chart perbandingan saham
+            function createComparisonChart(data) {
+                const seriesData = Object.values(data).map(item => ({
+                    name: item.name,
+                    data: item.data
+                }));
+
+                const options = {
+                    series: seriesData,
+                    chart: {
+                        type: 'line',
+                        height: 400,
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true,
+                                selection: true,
+                                zoom: true,
+                                zoomin: true,
+                                zoomout: true,
+                                pan: true,
+                                reset: true
+                            }
+                        },
+                        animations: {
+                            enabled: true
+                        }
+                    },
+                    stroke: {
+                        width: 2,
+                        curve: 'smooth'
+                    },
+                    colors: [
+                        '#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#6366f1',
+                        '#ec4899', '#14b8a6', '#8b5cf6', '#f43f5e', '#0ea5e9'
+                    ],
+                    xaxis: {
+                        type: 'datetime',
+                        labels: {
+                            format: 'dd MMM',
+                            datetimeUTC: false
+                        },
+                        title: {
+                            text: 'Tanggal'
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'Performa Relatif (%)'
+                        },
+                        labels: {
+                            formatter: function (value) {
+                                return value.toFixed(0) + '%';
+                            }
+                        }
+                    },
+                    tooltip: {
+                        shared: true,
+                        x: {
+                            format: 'dd MMM yyyy'
+                        },
+                        y: {
+                            formatter: function (value) {
+                                return value.toFixed(2) + '%';
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'center'
+                    }
+                };
+
+                if (comparisonChart) {
+                    comparisonChart.updateOptions(options);
+                } else {
+                    comparisonChart = new ApexCharts(document.getElementById('comparison-chart'), options);
+                    comparisonChart.render();
+                }
+            }
+
+            // Fungsi untuk membuat chart prediksi candlestick
+            function createPredictionChart(chartData) {
+                // Gabungkan data historis dan prediksi
+                let historicalData = chartData.historical;
+                let predictionData = chartData.predictions;
+
+                // Persiapkan annotasi untuk memisahkan data historis dan prediksi
+                const lastHistoricalDate = new Date(historicalData[historicalData.length - 1].x);
+                const firstPredictionDate = new Date(predictionData[0].x);
+
+                const options = {
+                    series: [{
+                        name: 'Candle',
+                        data: [...historicalData, ...predictionData]
+                    }],
+                    chart: {
+                        type: 'candlestick',
+                        height: 400,
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: true,
+                                selection: true,
+                                zoom: true,
+                                zoomin: true,
+                                zoomout: true,
+                                pan: true,
+                                reset: true
+                            }
+                        },
+                        animations: {
+                            enabled: true
+                        }
+                    },
+                    plotOptions: {
+                        candlestick: {
+                            colors: {
+                                upward: '#10b981',
+                                downward: '#ef4444'
+                            },
+                            wick: {
+                                useFillColor: true
+                            }
+                        }
+                    },
+                    annotations: {
+                        xaxis: [{
+                            x: firstPredictionDate.getTime(),
+                            borderColor: '#6366f1',
+                            label: {
+                                borderColor: '#6366f1',
+                                style: {
+                                    color: '#fff',
+                                    background: '#6366f1'
+                                },
+                                text: 'Mulai Prediksi'
+                            }
+                        }]
+                    },
+                    xaxis: {
+                        type: 'datetime',
+                        labels: {
+                            datetimeUTC: false
+                        }
+                    },
+                    yaxis: {
+                        tooltip: {
+                            enabled: true
+                        },
+                        labels: {
+                            formatter: function (value) {
+                                return formatCurrency(value, false);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        custom: function ({ seriesIndex, dataPointIndex, w }) {
+                            const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
+                            const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
+                            const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex];
+                            const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex];
+                            const date = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+
+                            // Cek apakah ini data prediksi
+                            const isPrediction = dataPointIndex >= historicalData.length;
+                            const predictionLabel = isPrediction ? '<div class="text-indigo-600 font-semibold mb-1">Prediksi</div>' : '';
+
+                            return '<div class="apexcharts-tooltip-candlestick p-2">' +
+                                predictionLabel +
+                                '<div class="font-medium mb-1">' + formatDate(date) + '</div>' +
+                                '<div>Open: <span class="text-gray-800">' + formatCurrency(o, false) + '</span></div>' +
+                                '<div>High: <span class="text-gray-800">' + formatCurrency(h, false) + '</span></div>' +
+                                '<div>Low: <span class="text-gray-800">' + formatCurrency(l, false) + '</span></div>' +
+                                '<div>Close: <span class="text-gray-800">' + formatCurrency(c, false) + '</span></div>' +
+                                '</div>';
+                        }
+                    }
+                };
+
+                if (predictionChart) {
+                    predictionChart.updateOptions(options);
+                } else {
+                    predictionChart = new ApexCharts(document.getElementById('prediction-chart'), options);
+                    predictionChart.render();
+                }
+
+                // Update recent analysis chart if this is a new analysis
+                if (!lastAnalyzedStock || lastAnalyzedStock !== tickerSelect.value) {
+                    lastAnalyzedStock = tickerSelect.value;
+
+                    // Convert candlestick data to line chart for recent analysis
+                    const closeData = [...historicalData, ...predictionData].map(item => ({
+                        x: new Date(item.x).getTime(),
+                        y: Array.isArray(item.y) ? item.y[3] : item.y // Close price
+                    }));
+
+                    const recentOptions = {
+                        series: [{
+                            name: tickerSelect.options[tickerSelect.selectedIndex].text.split(' - ')[0],
+                            data: closeData
+                        }],
+                        chart: {
+                            type: 'line',
+                            height: 350,
+                            toolbar: {
+                                show: false
+                            },
+                            animations: {
+                                enabled: true
+                            }
+                        },
+                        stroke: {
+                            curve: 'smooth',
+                            width: 2
+                        },
+                        colors: ['#4f46e5'],
+                        xaxis: {
+                            type: 'datetime',
+                            labels: {
+                                datetimeUTC: false
+                            }
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function (value) {
+                                    return formatCurrency(value, false);
+                                }
+                            }
+                        },
+                        grid: {
+                            borderColor: '#f3f4f6',
+                            strokeDashArray: 4,
+                            xaxis: {
+                                lines: {
+                                    show: true
+                                }
+                            }
+                        },
+                        tooltip: {
+                            x: {
+                                format: 'dd MMM yyyy'
+                            },
+                            y: {
+                                formatter: function (value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        },
+                        annotations: {
+                            xaxis: [{
+                                x: firstPredictionDate.getTime(),
+                                borderColor: '#6366f1',
+                                label: {
+                                    borderColor: '#6366f1',
+                                    style: {
+                                        color: '#fff',
+                                        background: '#6366f1'
+                                    },
+                                    text: 'Prediksi',
+                                    orientation: 'horizontal'
+                                }
+                            }]
+                        }
+                    };
+
+                    recentAnalysisChart.updateOptions(recentOptions);
+                }
+            }
+
+            // Fungsi untuk memuat grafik gabungan saham
+            async function loadCombinedChart() {
+                const combinedChartLoading = document.getElementById('combined-chart-loading');
+                const combinedChartError = document.getElementById('combined-chart-error');
+                const combinedChartContent = document.getElementById('combined-chart-content');
+                const stocksPerformance = document.getElementById('stocks-performance');
+                const topStocksContainer = document.getElementById('top-stocks');
+
+                try {
+                    // Check if we already have the data
+                    if (Object.keys(allStocksData).length === 0) {
+                        combinedChartLoading.classList.remove('hidden');
+                        combinedChartContent.classList.add('hidden');
+
+                        const response = await fetch('/all_stocks');
+
+                        if (!response.ok) {
+                            throw new Error('Terjadi kesalahan saat memuat data perbandingan saham');
+                        }
+
+                        allStocksData = await response.json();
+                    }
+
+                    // Buat chart perbandingan
+                    createComparisonChart(allStocksData.comparison);
+
+                    // Tampilkan data performa saham
+                    stocksPerformance.innerHTML = '';
+
+                    // Urutkan saham berdasarkan performa (dari tertinggi ke terendah)
+                    const sortedStocks = Object.entries(allStocksData.stocks).sort((a, b) => {
+                        return b[1].performance_pct - a[1].performance_pct;
+                    });
+
+                    // Buat kartu untuk setiap saham
+                    sortedStocks.forEach(([ticker, stockData]) => {
+                        const card = document.createElement('div');
+                        const performanceClass = stockData.performance_pct >= 0 ? 'text-green-600' : 'text-red-600';
+                        const performanceSign = stockData.performance_pct >= 0 ? '+' : '';
+
+                        card.className = 'stock-card bg-white p-3 rounded-lg border border-gray-200 hover:border-indigo-300';
+                        card.innerHTML = `
+                            <div class="font-bold">${ticker.replace('.JK', '')}</div>
+                            <div class="text-gray-600 text-xs">${stockData.name}</div>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-gray-800">${formatCurrency(stockData.last_price)}</span>
+                                <span class="${performanceClass} font-medium">
+                                    ${performanceSign}${stockData.performance_pct.toFixed(2)}%
+                                </span>
+                            </div>
+                        `;
+
+                        // Tambahkan event click untuk memilih saham
+                        card.addEventListener('click', function () {
+                            // Set ticker dan lakukan prediksi
+                            tickerSelect.value = ticker;
+
+                            // Show analysis section
+                            navLinks.forEach(l => l.classList.remove('active'));
+                            document.querySelector('a[href="#analysis"]').classList.add('active');
+
+                            Object.values(sections).forEach(section => {
+                                section.classList.add('hidden');
+                            });
+
+                            sections['analysis'].classList.remove('hidden');
+
+                            // Fetch prediction
+                            fetchPrediction();
+                        });
+
+                        stocksPerformance.appendChild(card);
+                    });
+
+                    // Update top stocks in sidebar
+                    topStocksContainer.innerHTML = '';
+
+                    // Take top 5 performers
+                    sortedStocks.slice(0, 5).forEach(([ticker, stockData]) => {
+                        const performanceClass = stockData.performance_pct >= 0 ? 'text-green-600' : 'text-red-600';
+                        const performanceSign = stockData.performance_pct >= 0 ? '+' : '';
+
+                        const stockItem = document.createElement('div');
+                        stockItem.className = 'flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer';
+                        stockItem.innerHTML = `
+                            <span class="font-medium">${ticker.replace('.JK', '')}</span>
+                            <span class="${performanceClass}">
+                                ${performanceSign}${stockData.performance_pct.toFixed(2)}%
+                            </span>
+                        `;
+
+                        stockItem.addEventListener('click', function () {
+                            tickerSelect.value = ticker;
+
+                            // Show analysis section
+                            navLinks.forEach(l => l.classList.remove('active'));
+                            document.querySelector('a[href="#analysis"]').classList.add('active');
+
+                            Object.values(sections).forEach(section => {
+                                section.classList.add('hidden');
+                            });
+
+                            sections['analysis'].classList.remove('hidden');
+
+                            // Close mobile sidebar
+                            if (window.innerWidth < 768) {
+                                sidebar.classList.remove('open');
+                            }
+
+                            // Fetch prediction
+                            fetchPrediction();
+                        });
+
+                        topStocksContainer.appendChild(stockItem);
+                    });
+
+                    combinedChartContent.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error loading combined chart:', error);
+                    combinedChartError.classList.remove('hidden');
+                } finally {
+                    combinedChartLoading.classList.add('hidden');
+                }
+            }
+
+            // Handle analyze button click
+            analyzeBtn.addEventListener('click', function () {
+                const ticker = tickerSelect.value;
+                if (!ticker) {
+                    alert('Silakan pilih saham terlebih dahulu');
+                    return;
+                }
+
+                // Show analysis section
+                navLinks.forEach(l => l.classList.remove('active'));
+                document.querySelector('a[href="#analysis"]').classList.add('active');
+
+                Object.values(sections).forEach(section => {
+                    section.classList.add('hidden');
+                });
+
+                sections['analysis'].classList.remove('hidden');
+
+                // Close mobile sidebar
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('open');
+                }
+
+                // Fetch prediction
+                fetchPrediction();
+            });
+
+            async function fetchPrediction() {
+                const ticker = tickerSelect.value;
+                if (!ticker) {
+                    return;
+                }
+
+                // Tampilkan loading
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+
+                const formData = new FormData(form);
+
+                let data;
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            body: formData
+        });
+
+        const contentType = response.headers.get('content-type');
+
+        if (!response.ok) {
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Terjadi kesalahan saat memproses permintaan');
+            } else {
+                const text = await response.text();
+                throw new Error('Server mengembalikan respons yang tidak dikenali:\n' + text);
+            }
+        }
+
+    data = await response.json();
+    displayResults(data);
+
+} catch (error) {
+    console.error(error);
+    showError(error.message);
+} finally {
+    loadingIndicator.classList.add('hidden');
+}
+
+            }
+
+            function displayResults(data) {
+                // Tampilkan informasi saham
+                document.getElementById('stock-name').textContent = data.name;
+                document.getElementById('stock-code').textContent = data.ticker;
+                document.getElementById('stock-price').textContent = formatCurrency(data.last_price);
+
+                const stockChange = document.getElementById('stock-change');
+                const changePercent = data.change_percent !== undefined ? data.change_percent.toFixed(2) : '-';
+                stockChange.textContent = `${data.change > 0 ? '+' : ''}${data.change.toFixed(2)} (${changePercent}%)`;
+
+                if (data.change > 0) {
+                    stockChange.classList.add('bg-green-100', 'text-green-800');
+                    stockChange.classList.remove('bg-red-100', 'text-red-800');
+                } else {
+                    stockChange.classList.add('bg-red-100', 'text-red-800');
+                    stockChange.classList.remove('bg-green-100', 'text-green-800');
+                }
+
+                // Buat chart prediksi
+                createPredictionChart(data.chart_data);
+
+                // Tampilkan tabel prediksi
+                const predictionTable = document.getElementById('prediction-table');
+                predictionTable.innerHTML = '';
+
+                let prevClose = data.last_price;
+
+                data.prediction.forEach((pred, index) => {
+                    if (pred.Predicted) {
+                        const row = document.createElement('tr');
+
+                        const change = pred.Close - prevClose;
+                        const changePercent = (change / prevClose * 100).toFixed(2);
+                        const changeClass = change >= 0 ? 'text-green-600' : 'text-red-600';
+                        const changeSign = change >= 0 ? '+' : '';
+
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(new Date(pred.Date))}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(pred.Open)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(pred.High)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(pred.Low)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(pred.Close)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${changeClass}">
+                                ${changeSign}${change.toFixed(2)} (${changeSign}${changePercent}%)
+                            </td>
+                        `;
+
+                        predictionTable.appendChild(row);
+                        prevClose = pred.Close;
+                    }
+                });
+
+                // Tampilkan prediksi tertinggi dan terendah
+                const predictions = data.prediction.filter(p => p.Predicted);
+                const highestPred = predictions.reduce((max, p) => p.High > max.High ? p : max, predictions[0]);
+                const lowestPred = predictions.reduce((min, p) => p.Low < min.Low ? p : min, predictions[0]);
+
+                document.querySelector('#highest-prediction p:first-child').textContent = formatCurrency(highestPred.High);
+                document.querySelector('#highest-prediction p:last-child').textContent = formatDate(new Date(highestPred.Date));
+
+                document.querySelector('#lowest-prediction p:first-child').textContent = formatCurrency(lowestPred.Low);
+                document.querySelector('#lowest-prediction p:last-child').textContent = formatDate(new Date(lowestPred.Date));
+
+                // Hitung potensi return
+                const lastPrediction = predictions[predictions.length - 1];
+                const potentialReturn = ((lastPrediction.Close - data.last_price) / data.last_price * 100).toFixed(2);
+                const returnElement = document.querySelector('#potential-return p:first-child');
+
+
+                document.querySelector("#RMSE p:first-child").textContent = data.rmse !== undefined && data.rmse !== null
+                ? data.rmse.toFixed(2)
+                : '-';
+
+                document.querySelector("#MAE p:first-child").textContent = data.mae !== undefined && data.mae !== null
+                ? data.mae.toFixed(2)
+                : '-';
+
+                document.querySelector("#R-squared p:first-child").textContent = data.r_squared !== undefined && data.r_squared !== null
+                ? data.r_squared.toFixed(2)
+                : '-';
+
+
+                returnElement.textContent = `${potentialReturn}%`;
+                if (potentialReturn >= 0) {
+                    returnElement.classList.add('text-green-600');
+                    returnElement.classList.remove('text-red-600');
+                } else {
+                    returnElement.classList.add('text-red-600');
+                    returnElement.classList.remove('text-green-600');
+                }
+
+                // Tampilkan container hasil
+                resultsContainer.classList.remove('hidden');
+            }
+
+            function formatCurrency(value, includeSymbol = true) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: includeSymbol ? 'currency' : 'decimal',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(value);
+            }
+
+            function formatDate(date) {
+                return new Intl.DateTimeFormat('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }).format(date);
+            }
+
+            function showError(message) {
+                errorText.textContent = message;
+                errorMessage.classList.remove('hidden');
+            }
+
+            // Initialize the app
+            initRecentAnalysisChart();
+            initMarketData();
+            loadCombinedChart();
+
+            // If feather icons are loaded
+            if (window.feather) {
+                feather.replace();
+            }
+
+            console.log('API Response:', data);
+            console.log(data.ticker);
+
+        });
+    </script>
+</body>
+
+</html>
